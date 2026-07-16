@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agp-control-kern"
+version = "0.1.0"
+description = "Gemeinsamer Fachkern der AGP·Control-Programmfamilie (Parser, Umwandlungen, Projektdatei)"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=1.26",
+    "openpyxl>=3.1",
+]
+
+[tool.setuptools]
+packages = ["agp_control_kern"]
