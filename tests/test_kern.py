@@ -50,3 +50,38 @@ def test_tf_to_ss_rnf():
 def test_texte():
     assert matrix_zu_text(np.array([[0.5, 1], [2, 3]])) == "[0.5 1; 2 3]"
     assert vektor_zu_text(np.array([1.0, 2.5]), "; ") == "1; 2.5"
+
+
+# ── Projektdatei: Totzeit-Feld t_t im System-Blatt (Formatversion 1, additiv) ──
+
+import io
+from openpyxl import load_workbook
+from agp_control_kern import projektdatei
+
+_SYS_BASIS = {"systemname": "PT1", "a_text": "[-1]", "b_text": "1", "c_text": "1",
+              "u_min": 0, "u_max": 1, "k_s": 1, "y_min": 0}
+
+
+def test_projektdatei_t_t_roundtrip():
+    """Totzeit t_t im System-Blatt übersteht Schreiben → Lesen."""
+    p = projektdatei.neu(fallname="TotzeitTest")
+    p["system"] = {**_SYS_BASIS, "t_t": 2.5}
+    zurueck = projektdatei.lesen(projektdatei.schreiben(p))
+    assert float(zurueck["system"]["t_t"]) == pytest.approx(2.5)
+
+
+def test_projektdatei_altdatei_ohne_t_t_liest_ohne_fehler():
+    """Altdatei ohne Totzeit-Zeile darf nicht scheitern (t_t ist optional)."""
+    p = projektdatei.neu(fallname="Alt")
+    p["system"] = dict(_SYS_BASIS)
+    roh = projektdatei.schreiben(p)
+    wb = load_workbook(io.BytesIO(roh))       # Totzeit-Zeile entfernen = Altdatei
+    ws = wb["System"]
+    for r in range(ws.max_row, 1, -1):
+        if ws.cell(r, 1).value == "Totzeit T_t":
+            ws.delete_rows(r)
+            break
+    buf = io.BytesIO()
+    wb.save(buf)
+    zurueck = projektdatei.lesen(buf.getvalue())   # darf NICHT werfen
+    assert "t_t" not in zurueck["system"]

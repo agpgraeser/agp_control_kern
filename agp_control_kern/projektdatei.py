@@ -57,6 +57,7 @@ SYSTEM_FELDER = [
     ("u_max",            "Stellbereich u_max"),
     ("k_s",              "Systemverstärkung k_S"),
     ("y_min",            "Regelbereich y_min"),
+    ("t_t",              "Totzeit T_t"),
     ("eingabeform",      "Eingabeform"),
     ("zaehler_text",     "G(s) Zählerpolynom"),
     ("nenner_text",      "G(s) Nennerpolynom"),
@@ -72,7 +73,7 @@ _SYSTEM_LABEL_ZU_KEY = {label: key for key, label in SYSTEM_FELDER}
 SYSTEM_OPTIONAL = {"systemname", "beschreibung", "eingabeform",
                    "zaehler_text", "nenner_text", "nullstellen_text",
                    "pole_text", "zaehler_zk_text", "nenner_zk_text",
-                   "k_faktor", "normalform"}
+                   "k_faktor", "normalform", "t_t"}
 
 STOERUNG_SPALTEN = ["Nr", "Typ", "Angriff", "Aktiv", "Amplitude", "Startzeit",
                     "Rate", "Frequenz", "Phase", "Seed", "Kommentar"]
