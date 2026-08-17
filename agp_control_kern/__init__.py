@@ -25,5 +25,15 @@ from .kern import (  # noqa: F401
 )
 from . import projektdatei  # noqa: F401
 from .projektdatei import ProjektdateiError  # noqa: F401
+from . import ptn_zpk  # noqa: F401
+from .ptn_zpk import (  # noqa: F401
+    MY_THEO_1090,
+    ALPHA,
+    ALPHA_INV,
+    ptn_sprungantwort,
+    ptn_sprungantwort_norm,
+    zpk_kennwerte,
+    zpk_auswertung,
+)
 
 __version__ = "0.1.0"
