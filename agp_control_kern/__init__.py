@@ -35,5 +35,14 @@ from .ptn_zpk import (  # noqa: F401
     zpk_kennwerte,
     zpk_auswertung,
 )
+from . import ptn_vergleich  # noqa: F401
+from .ptn_vergleich import (  # noqa: F401
+    T99,
+    vergleich,
+    zeitachse,
+    system_gueltig,
+    ptn_modell_aus_projekt,
+    signalwerte_aus_projekt,
+)
 
 __version__ = "0.1.0"
