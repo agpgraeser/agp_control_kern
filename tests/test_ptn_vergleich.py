@@ -151,10 +151,13 @@ def test_projekt_modell_mit_unbrauchbaren_werten():
 
 
 def test_signalwerte_aus_zeitverlaeufen():
-    # u springt zwischen t=2 und t=3 von 0 auf 10
+    # In der Projektdatei liegen die Daten SPALTENweise: daten[i] = Spalte i.
+    # u springt zwischen t=2 und t=3 von 0 auf 10.
     projekt = {"zeitverlaeufe": {
         "spalten": ["t", "y", "u"],
-        "daten": [[0, 20, 0], [1, 20, 0], [2, 20, 0], [3, 21, 10], [4, 25, 10]],
+        "daten": [[0, 1, 2, 3, 4],          # t
+                  [20, 20, 20, 21, 25],     # y
+                  [0, 0, 0, 10, 10]],       # u
     }}
     s = signalwerte_aus_projekt(projekt)
     assert s["y_a"] == 20 and s["u_a"] == 0
@@ -164,4 +167,16 @@ def test_signalwerte_aus_zeitverlaeufen():
 
 def test_signalwerte_ohne_zeitverlaeufe():
     assert signalwerte_aus_projekt({}) is None
-    assert signalwerte_aus_projekt({"zeitverlaeufe": {"spalten": ["t", "y"], "daten": [[0, 1]]}}) is None
+    # Spalte u fehlt -> keine Signalwerte ableitbar
+    assert signalwerte_aus_projekt(
+        {"zeitverlaeufe": {"spalten": ["t", "y"], "daten": [[0, 1], [5, 6]]}}) is None
+
+
+def test_signalwerte_bei_ungleich_langen_spalten():
+    """Kuerzeste Spalte bestimmt die Laenge – keine IndexError."""
+    projekt = {"zeitverlaeufe": {
+        "spalten": ["t", "y", "u"],
+        "daten": [[0, 1, 2, 3], [10, 11, 12], [0, 0, 5]],
+    }}
+    s = signalwerte_aus_projekt(projekt)
+    assert s is not None and s["y_a"] == 10

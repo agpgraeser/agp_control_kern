@@ -166,6 +166,8 @@ def signalwerte_aus_projekt(projekt: dict) -> dict | None:
     Sprunghoehe der Stellgroesse, t0 der Zeitpunkt des Sprungs.
     Liefert None, wenn die Datei keine brauchbaren Zeitverlaeufe hat.
     """
+    # Achtung: in der Projektdatei ist `daten` SPALTENweise abgelegt –
+    # daten[i] ist die komplette Spalte i, nicht eine Zeile.
     zv = projekt.get("zeitverlaeufe") or {}
     spalten = [str(s) for s in (zv.get("spalten") or [])]
     daten = zv.get("daten") or []
@@ -184,15 +186,19 @@ def signalwerte_aus_projekt(projekt: dict) -> dict | None:
     i_u = spalte("u", "stellgroesse", "stellgröße")
     if i_t is None or i_y is None or i_u is None:
         return None
+    if max(i_t, i_y, i_u) >= len(daten):
+        return None
 
     try:
-        t = [float(z[i_t]) for z in daten]
-        y = [float(z[i_y]) for z in daten]
-        u = [float(z[i_u]) for z in daten]
-    except (IndexError, TypeError, ValueError):
+        t = [float(v) for v in daten[i_t]]
+        y = [float(v) for v in daten[i_y]]
+        u = [float(v) for v in daten[i_u]]
+    except (TypeError, ValueError):
         return None
-    if not t:
+    if not t or not y or not u:
         return None
+    laenge = min(len(t), len(y), len(u))
+    t, y, u = t[:laenge], y[:laenge], u[:laenge]
 
     y_a, u_a = y[0], u[0]
     # Sprungzeitpunkt: erste nennenswerte Aenderung der Stellgroesse
