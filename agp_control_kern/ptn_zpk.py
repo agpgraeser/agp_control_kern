@@ -56,13 +56,15 @@ SYNTH_PUNKTE = 1000
 
 # ── PTn-Sprungantwort ────────────────────────────────────────────────────────
 
-def ptn_sprungantwort_norm(t, T: float, n: int, t0: float):
-    """Normierte PTn-Sprungantwort (Endwert 1).
+def ptn_sprungantwort_norm(t, T: float, n: int, t0: float, t_t: float = 0.0):
+    """Normierte PTn-Sprungantwort (Endwert 1), optional mit Totzeit t_t.
 
-        0                                    fuer t <= t0
-        1 - e^-tau * SUMME_{i=0}^{n-1} tau^i / i!   fuer t > t0
+        0                                          fuer t <= t0 + t_t
+        1 - e^-tau * SUMME_{i=0}^{n-1} tau^i / i!   fuer t >  t0 + t_t
 
-    mit tau = (t - t0) / T. `t` darf Skalar oder Array sein; der
+    mit tau = (t - t0 - t_t) / T. Die Totzeit t_t (>= 0) verschiebt die
+    gesamte Antwort um t_t nach hinten (Faktor e^{-t_t*s} in G(s)); t_t = 0
+    ist das bisherige Verhalten. `t` darf Skalar oder Array sein; der
     Rueckgabetyp folgt der Eingabe.
     """
     skalar = np.isscalar(t)
@@ -72,8 +74,9 @@ def ptn_sprungantwort_norm(t, T: float, n: int, t0: float):
         ergebnis = np.zeros_like(t_arr)
         return float(ergebnis) if skalar else ergebnis
 
-    tau = (t_arr - t0) / T
-    aktiv = t_arr > t0
+    t0e = t0 + (t_t if t_t and math.isfinite(t_t) else 0.0)  # Start inkl. Totzeit
+    tau = (t_arr - t0e) / T
+    aktiv = t_arr > t0e
 
     # Reihe SUMME tau^i / i! stabil aufbauen (Term_i = Term_{i-1} * tau / i)
     reihe = np.zeros_like(t_arr)
@@ -91,9 +94,13 @@ def ptn_sprungantwort_norm(t, T: float, n: int, t0: float):
 
 
 def ptn_sprungantwort(t, T: float, n: int, t0: float,
-                      y_a: float, k_s: float, d_u: float):
-    """PTn-Sprungantwort in Prozessgroessen:  y(t) = y_A + k_S * dU * y_norm(t)."""
-    return y_a + k_s * d_u * ptn_sprungantwort_norm(t, T, n, t0)
+                      y_a: float, k_s: float, d_u: float, t_t: float = 0.0):
+    """PTn-Sprungantwort in Prozessgroessen:  y(t) = y_A + k_S * dU * y_norm(t).
+
+    Optionale Totzeit t_t (>= 0) verschiebt die Antwort um t_t (PTnTT-System
+    G(s) = k_S/(1+T*s)^n * e^{-t_t*s}). t_t = 0 ist das bisherige PTn-Verhalten.
+    """
+    return y_a + k_s * d_u * ptn_sprungantwort_norm(t, T, n, t0, t_t)
 
 
 # ── ZPK-Identifikation ───────────────────────────────────────────────────────

@@ -54,6 +54,12 @@ def system_gueltig(sys: dict) -> bool:
             return False
         if float(sys["T_s"]) <= 0:
             return False
+        # Totzeit T_t ist optional; wenn angegeben, muss sie >= 0 sein.
+        t_t = sys.get("T_t")
+        if t_t is not None:
+            t_t = float(t_t)
+            if not math.isfinite(t_t) or t_t < 0:
+                return False
     except (TypeError, ValueError):
         return False
     return True
@@ -78,7 +84,8 @@ def zeitachse(systeme: list[dict], zeit_daten: list[float] | None = None) -> lis
     if not gueltige:
         return []
 
-    t_ende = max(float(s["t0"]) + T99.get(_ordnung(s), 5.0) * float(s["T_s"])
+    t_ende = max(float(s["t0"]) + float(s.get("T_t") or 0.0)
+                 + T99.get(_ordnung(s), 5.0) * float(s["T_s"])
                  for s in gueltige)
     if not math.isfinite(t_ende) or t_ende <= 0:
         return []
@@ -91,7 +98,8 @@ def vergleich(systeme: list[dict],
     """Berechnet die Sprungantworten aller aktiven, gueltigen Systeme.
 
     `systeme` ist eine Liste von dicts mit den Feldern name, y_a, t0,
-    d_u, k_s, n, T_s und aktiv. Ungueltige oder abgeschaltete Systeme
+    d_u, k_s, n, T_s, aktiv und optional T_t (Totzeit >= 0, Vorgabe 0 =
+    reines PTn-System). Ungueltige oder abgeschaltete Systeme
     werden uebersprungen – die Oberflaeche soll waehrend der Eingabe
     weiterzeichnen koennen.
 
@@ -117,9 +125,10 @@ def vergleich(systeme: list[dict],
         if not sys.get("aktiv", True) or not system_gueltig(sys):
             continue
         n = _ordnung(sys)
+        t_t = float(sys.get("T_t") or 0.0)
         kurve = ptn_sprungantwort(t_arr, float(sys["T_s"]), n, float(sys["t0"]),
                                   float(sys["y_a"]), float(sys["k_s"]),
-                                  float(sys["d_u"]))
+                                  float(sys["d_u"]), t_t)
         ergebnis["kurven"].append({
             "index": i,
             "name": sys.get("name") or f"System {i + 1}",

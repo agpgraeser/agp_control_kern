@@ -180,3 +180,43 @@ def test_signalwerte_bei_ungleich_langen_spalten():
     }}
     s = signalwerte_aus_projekt(projekt)
     assert s is not None and s["y_a"] == 10
+
+
+# ── Totzeit T_t (PTnTT) ─────────────────────────────────────────────────────
+
+def test_totzeit_verschiebt_antwort_um_t_t():
+    """PTnTT: die Antwort ist die reine PTn-Antwort, um t_t nach hinten
+    verschoben (G(s) = k_S/(1+T*s)^n * e^{-t_t*s})."""
+    t = np.linspace(0, 30, 601)
+    mit = ptn_sprungantwort(t, 1.0, 3, 0.0, 0.0, 1.0, 1.0, 5.0)
+    # Vor t0+t_t = 5 ist die Antwort noch 0
+    assert np.allclose(mit[t <= 5.0], 0.0)
+    # mit(t) == ohne(t-5): dieselbe Kurve, nur verschoben
+    ohne_verschoben = ptn_sprungantwort(t - 5.0, 1.0, 3, 0.0, 0.0, 1.0, 1.0, 0.0)
+    np.testing.assert_allclose(mit, ohne_verschoben, atol=1e-12)
+
+
+def test_totzeit_null_wie_ohne_totzeit():
+    """t_t = 0 (oder fehlend) ist exakt das bisherige PTn-Verhalten."""
+    t = np.linspace(0, 20, 401)
+    ohne = ptn_sprungantwort(t, 2.0, 4, 1.0, 0.0, 1.0, 1.0)
+    tt0 = ptn_sprungantwort(t, 2.0, 4, 1.0, 0.0, 1.0, 1.0, 0.0)
+    np.testing.assert_allclose(ohne, tt0, atol=1e-15)
+
+
+def test_totzeit_negativ_ist_ungueltig():
+    assert system_gueltig(dict(sys_(), T_t=0.0))
+    assert system_gueltig(dict(sys_(), T_t=3.5))
+    assert not system_gueltig(dict(sys_(), T_t=-1.0))
+    assert not system_gueltig(dict(sys_(), T_t=float("nan")))
+
+
+def test_vergleich_mit_totzeit_verschiebt_kurve_und_zeitachse():
+    s = dict(sys_(t0=0.0, T_s=1.0, n=3), T_t=5.0)
+    e = vergleich([s])
+    zeit = np.asarray(e["zeit"])
+    daten = np.asarray(e["kurven"][0]["daten"])
+    # Vor der Totzeit ist die Kurve 0 ...
+    assert np.allclose(daten[zeit <= 5.0], 0.0, atol=1e-9)
+    # ... und die (synthetische) Zeitachse reicht ueber die Totzeit hinaus
+    assert zeit[-1] > 5.0
