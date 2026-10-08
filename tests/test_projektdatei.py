@@ -116,3 +116,33 @@ def test_dateiname_schema():
     name = pd.dateiname("Fall A/B")
     assert name.startswith("Fall_A_B-20")
     assert name.endswith(".xlsx")
+
+
+def test_teilsysteme_rundreise():
+    """Kaskade (2026-10-08): Blatt Teilsysteme, eine Spalte je Teilsystem."""
+    p = pd.neu("Kaskade")
+    p["system"] = {"a_text": "-1", "b_text": "2", "c_text": "1", "u_min": 0,
+                   "u_max": 100, "k_s": 2, "y_min": 0, "struktur": 2}
+    p["teilsysteme"] = [
+        {"a_text": "-1", "b_text": "2", "c_text": "1", "t_t": 0, "y_min": 0, "y_max": 60},
+        {"a_text": "0 1; -0.01 -0.2", "b_text": "0; 0.01", "c_text": "1 0",
+         "t_t": 2.5, "eingabeform": "zk", "nenner_zk_text": "(10s+1)^2"},
+    ]
+    q = pd.lesen(pd.schreiben(p))
+    assert q["system"]["struktur"] == "2"
+    assert len(q["teilsysteme"]) == 2
+    assert q["teilsysteme"][1]["a_text"] == "0 1; -0.01 -0.2"
+    assert float(q["teilsysteme"][1]["t_t"]) == 2.5
+    assert q["teilsysteme"][1]["eingabeform"] == "zk"
+    assert q["teilsysteme"][0]["y_max"] == "60"
+
+
+def test_einzelkreis_hat_kein_blatt_teilsysteme():
+    from openpyxl import load_workbook
+    import io
+    p = pd.neu("Einzel")
+    p["system"] = {"a_text": "-1", "b_text": "1", "c_text": "1", "u_min": 0,
+                   "u_max": 1, "k_s": 1, "y_min": 0}
+    inhalt = pd.schreiben(p)
+    assert "Teilsysteme" not in load_workbook(io.BytesIO(inhalt)).sheetnames
+    assert pd.lesen(inhalt)["teilsysteme"] is None

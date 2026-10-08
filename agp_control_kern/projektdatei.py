@@ -69,12 +69,37 @@ SYSTEM_FELDER = [
     ("k_faktor",         "G(s) Faktor K"),
     ("normalform",       "Normalform"),
     ("beschreibung",     "Beschreibung"),
+    ("struktur",         "Struktur (Anzahl Teilsysteme)"),
 ]
 _SYSTEM_LABEL_ZU_KEY = {label: key for key, label in SYSTEM_FELDER}
-SYSTEM_OPTIONAL = {"systemname", "y_max", "beschreibung", "eingabeform",
+SYSTEM_OPTIONAL = {"systemname", "y_max", "struktur", "beschreibung", "eingabeform",
                    "zaehler_text", "nenner_text", "nullstellen_text",
                    "pole_text", "zaehler_zk_text", "nenner_zk_text",
                    "k_faktor", "normalform", "t_t"}
+
+# Teilsysteme einer Kaskade (2026-10-08, Konzept AG-LaTeX-Notizen Kap. 53):
+# Blatt „Teilsysteme“, eine Spalte je Teilsystem S1 … SN in Signalrichtung.
+# Blatt System enthält dann die Gesamtstrecke (Totzeit = Summe, Näherung);
+# bei einem Einzelkreis gibt es das Blatt nicht.
+TEILSYSTEM_FELDER = [
+    ("a_text",           "Systemmatrix A"),
+    ("b_text",           "Eingangsvektor b"),
+    ("c_text",           "Ausgangsvektor c"),
+    ("k_s",              "Systemverstärkung k_S"),
+    ("t_t",              "Totzeit T_t"),
+    ("y_min",            "Regelbereich y_min"),
+    ("y_max",            "Regelbereich y_max"),
+    ("eingabeform",      "Eingabeform"),
+    ("zaehler_text",     "G(s) Zählerpolynom"),
+    ("nenner_text",      "G(s) Nennerpolynom"),
+    ("nullstellen_text", "G(s) Nullstellen"),
+    ("pole_text",        "G(s) Pole"),
+    ("zaehler_zk_text",  "G(s) Zähler-Zeitkonstanten"),
+    ("nenner_zk_text",   "G(s) Nenner-Zeitkonstanten"),
+    ("k_faktor",         "G(s) Faktor K"),
+    ("normalform",       "Normalform"),
+]
+_TEILSYSTEM_LABEL_ZU_KEY = {label: key for key, label in TEILSYSTEM_FELDER}
 
 STOERUNG_SPALTEN = ["Nr", "Typ", "Angriff", "Aktiv", "Amplitude", "Startzeit",
                     "Rate", "Frequenz", "Phase", "Seed", "Kommentar"]
@@ -176,6 +201,17 @@ def schreiben(projekt: dict, programm: str = "", aktion: str = "") -> bytes:
         for key, label in SYSTEM_FELDER:
             ws.append([label, projekt["system"].get(key, "")])
 
+    # Teilsysteme (Kaskade): Zeilen = Felder, Spalten = S1 … SN
+    teile = projekt.get("teilsysteme")
+    if teile:
+        ws = wb.create_sheet("Teilsysteme")
+        ws.append(["Feld"] + [f"S{i + 1}" for i in range(len(teile))])
+        for zelle in ws[1]:
+            zelle.font = fett
+        for key, label in TEILSYSTEM_FELDER:
+            ws.append([label] + [t.get(key, "") for t in teile])
+        ws.column_dimensions["A"].width = 28
+
     # Tabellen-Blätter
     for blattname, key, spalten in _TABELLEN:
         zeilen = projekt.get(key)
@@ -248,6 +284,25 @@ def _lese_system(ws) -> dict:
     return daten
 
 
+def _lese_teilsysteme(ws) -> list[dict]:
+    kopf = [z.value for z in ws[1]][1:]
+    n = len([k for k in kopf if k is not None and str(k).strip() != ""])
+    teile: list[dict] = [{} for _ in range(n)]
+    for zeile in ws.iter_rows(min_row=2, max_col=n + 1, values_only=True):
+        key = _TEILSYSTEM_LABEL_ZU_KEY.get(zeile[0])
+        if key is None:
+            continue
+        for i in range(n):
+            wert = zeile[i + 1] if i + 1 < len(zeile) else None
+            teile[i][key] = "" if wert is None else str(wert)
+    for i, t in enumerate(teile):
+        fehlend = [label for key, label in TEILSYSTEM_FELDER[:3] if not t.get(key)]
+        if fehlend:
+            raise ProjektdateiError(
+                f"Blatt Teilsysteme, S{i + 1}: es fehlen " + ", ".join(fehlend))
+    return teile
+
+
 def _lese_tabelle(ws, spalten: list[str]) -> list[dict]:
     kopf = [str(z.value) if z.value is not None else "" for z in ws[1]]
     zeilen = []
@@ -283,7 +338,7 @@ def lesen(inhalt: bytes) -> dict:
 
     projekt = {"meta": None, "system": None, "stoerungen": None,
                "zeitverlaeufe": None, "modelle": None, "regler": None,
-               "kennwerte": None}
+               "kennwerte": None, "teilsysteme": None}
 
     if "Meta" in wb.sheetnames:
         projekt["meta"] = _lese_meta(wb["Meta"])
@@ -314,6 +369,8 @@ def lesen(inhalt: bytes) -> dict:
 
     if "System" in wb.sheetnames:
         projekt["system"] = _lese_system(wb["System"])
+    if "Teilsysteme" in wb.sheetnames:
+        projekt["teilsysteme"] = _lese_teilsysteme(wb["Teilsysteme"])
     for blattname, key, spalten in _TABELLEN:
         if blattname in wb.sheetnames:
             projekt[key] = _lese_tabelle(wb[blattname], spalten)
