@@ -104,8 +104,10 @@ _TEILSYSTEM_LABEL_ZU_KEY = {label: key for key, label in TEILSYSTEM_FELDER}
 STOERUNG_SPALTEN = ["Nr", "Typ", "Angriff", "Aktiv", "Amplitude", "Startzeit",
                     "Rate", "Frequenz", "Phase", "Seed", "Kommentar"]
 MODELL_SPALTEN = ["Nr", "Typ", "Methode", "k_M", "n", "T_M", "T_T", "T_1", "Guete"]
+# Ebene (2026-10-09, Kaskade): 1 = innerster Regler … N = äußerer; leer =
+# Einzelkreis bzw. äußere Ebene. Steht hinten, damit ältere Dateien passen.
 REGLER_SPALTEN = ["Nr", "Modell_Nr", "Verfahren", "Reglertyp", "Optionen",
-                  "T_A", "k_P", "T_N", "T_V"]
+                  "T_A", "k_P", "T_N", "T_V", "Ebene"]
 KENNWERT_SPALTEN = ["Regler_Nr", "Simulationsart", "Toleranzband", "h_m",
                     "T_an", "T_aus", "u_max", "e_bleibend",
                     "Mittelwert_y", "ZweiSigma_y", "Mittelwert_u", "ZweiSigma_u",
