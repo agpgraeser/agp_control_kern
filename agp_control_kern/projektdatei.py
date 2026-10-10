@@ -98,6 +98,9 @@ TEILSYSTEM_FELDER = [
     ("nenner_zk_text",   "G(s) Nenner-Zeitkonstanten"),
     ("k_faktor",         "G(s) Faktor K"),
     ("normalform",       "Normalform"),
+    # 2026-10-10 (Kap. 54, F4): "nein" = Teilsystem ohne eigenen Regler, die
+    # Ebene ist durchgeschaltet; leer/fehlend = ja. Für S_N immer ja.
+    ("regler",           "Eigener Regler"),
 ]
 _TEILSYSTEM_LABEL_ZU_KEY = {label: key for key, label in TEILSYSTEM_FELDER}
 

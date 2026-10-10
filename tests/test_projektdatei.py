@@ -135,6 +135,19 @@ def test_teilsysteme_rundreise():
     assert float(q["teilsysteme"][1]["t_t"]) == 2.5
     assert q["teilsysteme"][1]["eingabeform"] == "zk"
     assert q["teilsysteme"][0]["y_max"] == "60"
+    assert q["teilsysteme"][0].get("regler", "") == ""     # leer = ja
+
+
+def test_teilsysteme_eigener_regler():
+    """Kap. 54, F4: Zeile „Eigener Regler“ (nein = durchgeschaltet)."""
+    p = pd.neu("Stellglied")
+    p["teilsysteme"] = [
+        {"a_text": "-5", "b_text": "5", "c_text": "1", "regler": "nein"},
+        {"a_text": "-1", "b_text": "1", "c_text": "1"},
+    ]
+    q = pd.lesen(pd.schreiben(p))
+    assert q["teilsysteme"][0]["regler"] == "nein"
+    assert q["teilsysteme"][1]["regler"] == ""
 
 
 def test_einzelkreis_hat_kein_blatt_teilsysteme():
