@@ -159,3 +159,31 @@ def test_einzelkreis_hat_kein_blatt_teilsysteme():
     inhalt = pd.schreiben(p)
     assert "Teilsysteme" not in load_workbook(io.BytesIO(inhalt)).sheetnames
     assert pd.lesen(inhalt)["teilsysteme"] is None
+
+
+def test_aufschaltungen_rundreise():
+    """Kap. 54, F6: Blatt Aufschaltungen, eine Zeile je Aufschaltung."""
+    p = pd.neu("Aufschaltung")
+    p["stoerungen"] = [{"Nr": 1, "Typ": "sprung", "Angriff": "eingang2", "Aktiv": "ja",
+                        "Amplitude": -10, "Startzeit": 20}]
+    p["aufschaltungen"] = [
+        {"Nr": 1, "Aktiv": "ja", "Stoerung": 1, "Punkt": "stellgroesse", "T_M": "",
+         "T_tM": 0.5, "Form": "pdt1", "K_SA": -0.5, "T_V": 1, "T_1": 0.2},
+        {"Nr": 2, "Aktiv": "nein", "Stoerung": 1, "Punkt": "sollwert_1", "Form": "frei",
+         "Zaehler": "-0.5 -0.5", "Nenner": "0.2 1", "Kommentar": "PD"},
+    ]
+    q = pd.lesen(pd.schreiben(p))
+    a = q["aufschaltungen"]
+    assert len(a) == 2
+    assert a[0]["Form"] == "pdt1" and float(a[0]["K_SA"]) == -0.5 and float(a[0]["T_tM"]) == 0.5
+    assert a[1]["Punkt"] == "sollwert_1" and a[1]["Zaehler"] == "-0.5 -0.5"
+    assert a[1]["Aktiv"] == "nein"
+
+
+def test_ohne_aufschaltungen_kein_blatt():
+    from openpyxl import load_workbook
+    import io
+    p = pd.neu("Ohne")
+    inhalt = pd.schreiben(p)
+    assert "Aufschaltungen" not in load_workbook(io.BytesIO(inhalt)).sheetnames
+    assert pd.lesen(inhalt)["aufschaltungen"] is None

@@ -116,10 +116,19 @@ KENNWERT_SPALTEN = ["Regler_Nr", "Simulationsart", "Toleranzband", "h_m",
                     "Mittelwert_y", "ZweiSigma_y", "Mittelwert_u", "ZweiSigma_u",
                     "Kommentar"]
 
+# Störgrößenaufschaltung (2026-10-10, AG-LaTeX-Notizen Kap. 54, F6): eine Zeile
+# je Aufschaltung. Stoerung = Nr im Blatt Stoerungen; Punkt = stellgroesse
+# oder sollwert_k (Sollwert des inneren Reglers R_k); Form = statisch, pdt1
+# oder frei (Zaehler/Nenner: Koeffizienten absteigender Potenzen von s);
+# Messglied T_M (PT1) und T_tM (Totzeit), leer = ideal.
+AUFSCHALTUNG_SPALTEN = ["Nr", "Aktiv", "Stoerung", "Punkt", "T_M", "T_tM", "Form",
+                        "K_SA", "T_V", "T_1", "Zaehler", "Nenner", "Kommentar"]
+
 _TABELLEN = [("Stoerungen", "stoerungen", STOERUNG_SPALTEN),
              ("Modelle", "modelle", MODELL_SPALTEN),
              ("Regler", "regler", REGLER_SPALTEN),
-             ("Kennwerte", "kennwerte", KENNWERT_SPALTEN)]
+             ("Kennwerte", "kennwerte", KENNWERT_SPALTEN),
+             ("Aufschaltungen", "aufschaltungen", AUFSCHALTUNG_SPALTEN)]
 
 _META_FELDER = [("formatversion", "Formatversion"),
                 ("fallname", "Fallname"),
@@ -155,7 +164,7 @@ def neu(fallname: str, beschreibung: str = "", programm: str = "") -> dict:
                           "aktion": "Projekt angelegt"}],
         },
         "system": None, "stoerungen": None, "zeitverlaeufe": None,
-        "modelle": None, "regler": None, "kennwerte": None,
+        "modelle": None, "regler": None, "kennwerte": None, "aufschaltungen": None,
     }
 
 
@@ -343,7 +352,7 @@ def lesen(inhalt: bytes) -> dict:
 
     projekt = {"meta": None, "system": None, "stoerungen": None,
                "zeitverlaeufe": None, "modelle": None, "regler": None,
-               "kennwerte": None, "teilsysteme": None}
+               "kennwerte": None, "teilsysteme": None, "aufschaltungen": None}
 
     if "Meta" in wb.sheetnames:
         projekt["meta"] = _lese_meta(wb["Meta"])
