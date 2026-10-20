@@ -56,6 +56,8 @@ from .pt1tt_tangente import (  # noqa: F401
     modell_sprungantwort as pt1tt_modell_sprungantwort,
     guetemasse as pt1tt_guetemasse,
     auswertung as pt1tt_auswertung,
+    projekt_zeilen as pt1tt_projekt_zeilen,
+    ablesung_zu_eingaben as pt1tt_ablesung_zu_eingaben,
 )
 
 __version__ = "0.1.0"

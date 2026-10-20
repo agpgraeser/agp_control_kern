@@ -331,3 +331,53 @@ def test_grosse_ausgleichszeit_ueberlaeuft_nicht():
     kurve = pt1tt_modell_sprungantwort(
         t, xa=0.0, k_s=1.0, d_y=1.0, t0=0.0, tt=0.0, tg=1e-6)
     assert all(math.isfinite(w) for w in kurve)
+
+
+# ── Projektdatei: Blätter Ablesung und Modelle (2026-10-20) ────────────────
+
+from agp_control_kern import (  # noqa: E402
+    pt1tt_ablesung_zu_eingaben,
+    pt1tt_projekt_zeilen,
+    projektdatei,
+)
+
+
+def test_projekt_zeilen_referenzfall_mit_messung(messung):
+    zeit, x, _ = messung
+    ablesung, modelle = pt1tt_projekt_zeilen(zeit=zeit, x_mess=x, methode=1, **REF)
+    assert ablesung["y_A"] == 10.0 and ablesung["u_E"] == 5.0
+    assert ablesung["t_P1"] == 6.0 and ablesung["y_P2"] == 15.8314
+    assert ablesung["t_P3"] == "" and ablesung["y_P3"] == ""
+    assert len(modelle) == 1
+    m = modelle[0]
+    assert m["Typ"] == "PT1TT" and m["n"] == "" and m["T_M"] == ""
+    assert m["Methode"] == "Tangente M1 (TG)"
+    assert m["k_M"] == pytest.approx(2.0)
+    assert m["T_T"] == pytest.approx(REF_TT, abs=1e-6)
+    assert m["T_1"] == pytest.approx(REF_TG, abs=1e-6)
+    assert m["Guete"] == pytest.approx(REF_INTEGRAL_1, rel=1e-9)
+
+
+def test_projekt_zeilen_methode_3_zwei_modelle_ohne_messung():
+    _, modelle = pt1tt_projekt_zeilen(methode=3, **REF)
+    assert [m["Methode"] for m in modelle] == ["Tangente M1 (TG)", "Tangente M2 (TG1)"]
+    assert modelle[1]["T_1"] == pytest.approx(REF_TG1, abs=1e-6)
+    assert all(m["Guete"] == "" for m in modelle)
+
+
+def test_projekt_zeilen_tangente_schief_keine_modelle():
+    falsch = {**REF, "x_tp1": 10.0}          # t1 == tTP1 -> keine Kennwerte
+    ablesung, modelle = pt1tt_projekt_zeilen(**falsch)
+    assert modelle == []
+    assert ablesung["y_P1"] == 10.0
+
+
+def test_ablesung_rundweg_ueber_die_datei():
+    ablesung, modelle = pt1tt_projekt_zeilen(**REF)
+    p = projektdatei.neu("Fall", programm="Test")
+    projektdatei.ablesung_ersetzen(p, "Tangente", ablesung, modelle)
+    q = projektdatei.lesen(projektdatei.schreiben(p))
+    zeile = projektdatei.ablesung_finden(q, "Tangente")
+    eingaben = pt1tt_ablesung_zu_eingaben(zeile)
+    assert eingaben == {k: pytest.approx(v) for k, v in REF.items()}
+    assert q["modelle"][0]["Ablesung_Nr"] == zeile["Nr"]

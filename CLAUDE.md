@@ -13,6 +13,10 @@ Vereinheitlichung, Spec 25v07 + Antwortkonzept + Projektdatei-Spec V1 in
   .xlsx je Schulungsfall (Blätter Meta/System/Stoerungen/Zeitverlaeufe/Modelle/
   Regler/Kennwerte); Programme schreiben nur eigene Blätter + Historie-Zeile;
   Altformat-Import (RKZ-Systemdateien); Zeitbasis Sekunden.
+  Seit 2026-10-20 Blatt **Ablesung** (eine Zeile je Verfahren: Tangente,
+  Wendetangente, 3-Punkt) und Spalte `Ablesung_Nr` in Modelle;
+  `ablesung_ersetzen()` ersetzt nur das eigene Verfahren samt seinen Modellen,
+  `ablesung_finden()` holt die Zeile zurück.
 - `pt1tt_tangente.py` – PT1TT-Modell aus einer Sprungantwort nach der
   **Tangentenmethode**, portiert aus `PT1TT_Einspeicher_Tang/src/utils/
   pt1ttMath.ts` (2026-10-20, Spec dort: `SPEC-Portierung-Python.md`).
@@ -20,6 +24,9 @@ Vereinheitlichung, Spec 25v07 + Antwortkonzept + Projektdatei-Spec V1 in
   Einspeichersystem ohne Wendepunkt) und später PT1TT · Wendetangente
   (TP1 = Wendepunkt). Punkte heißen deshalb neutral `tangentenpunkt1/2`.
   Alle drei Methoden im Kern; die Tangenten-Oberfläche zeigt nur Methode 1.
+  `projekt_zeilen()` / `ablesung_zu_eingaben()`: Ablesung und Modelle für die
+  Projektdatei (PT1TT nach Spec: `T_T`, `T_1`; `n`, `T_M` leer). Die
+  Wendetangente ruft dieselbe Funktion mit `verfahren="Wendetangente"`.
 - `__init__.py` re-exportiert alles Wichtige – die PT1TT-Namen **mit Vorsilbe**
   (`pt1tt_kennwerte`, `pt1tt_auswertung`, …), weil `kennwerte`/`auswertung`
   im Paketnamensraum nicht eindeutig wären.
@@ -33,7 +40,7 @@ Editierbar eingebunden (`-e ../agp_control_kern` in requirements.txt):
 Die Vite/JS-Apps (PTkPTn-*) nutzen NUR das Dateiformat (kein Python).
 
 ## Tests & Regeln
-- `venv der Apps: python -m pytest tests` (136 Tests hier; die tiefe Abdeckung
+- `venv der Apps: python -m pytest tests` (145 Tests hier; die tiefe Abdeckung
   der Kernfunktionen liegt historisch in RegelkreisZustandsDemo/test_sim_core.py).
 - **Änderungen am Kern immer gegen alle App-Suiten prüfen** – die Apps binden
   dieses Paket live ein (-e). Stand 2026-10-20: RegelkreisSimulationen 113,
@@ -49,3 +56,8 @@ Die Vite/JS-Apps (PTkPTn-*) nutzen NUR das Dateiformat (kein Python).
   Schritt 1). Referenzfall der Spec als Testanker: t₁/t₂/TT/TG auf drei
   Nachkommastellen, kS auf vier, Σ Δx²·Δt beider Modelle auf sechs geltende
   Ziffern – 39 Tests, Suite hier 136, alle sechs App-Suiten unverändert grün.
+- **2026-10-20:** Projektdatei um Blatt Ablesung + `Ablesung_Nr` erweitert,
+  `pt1tt_tangente.projekt_zeilen`. Spec-Nachtrag in
+  `RegelkreisSimulationen/Spezifikationen/25v07-V1-Spec-AGP-Projektdatei.tex`.
+  Formatversion bleibt 1 (ältere Leser gehen nach Spaltennamen). 145 Tests,
+  alle sieben App-Suiten grün.

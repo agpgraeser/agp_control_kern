@@ -187,3 +187,47 @@ def test_ohne_aufschaltungen_kein_blatt():
     inhalt = pd.schreiben(p)
     assert "Aufschaltungen" not in load_workbook(io.BytesIO(inhalt)).sheetnames
     assert pd.lesen(inhalt)["aufschaltungen"] is None
+
+
+# ── Blatt Ablesung (2026-10-20) ─────────────────────────────────────────────
+
+def _modell(methode):
+    return {"Typ": "PT1TT", "Methode": methode, "k_M": 2, "n": 1, "T_M": 5, "T_T": 1}
+
+
+def test_ablesung_ersetzen_je_verfahren_eine_zeile():
+    p = pd.neu("Fall", programm="Test")
+    p["modelle"] = [{"Nr": 1, "Typ": "PTn", "Methode": "ZPK", "k_M": 2, "n": 3,
+                     "T_M": 1.5}]                                   # ohne Ablesung
+    pd.ablesung_ersetzen(p, "Tangente", {"y_A": 1}, [_modell("T1")])
+    pd.ablesung_ersetzen(p, "Wendetangente", {"y_A": 2},
+                         [_modell("W1"), _modell("W2")])
+    # erneut speichern: ersetzt nur die Tangente
+    pd.ablesung_ersetzen(p, "Tangente", {"y_A": 3}, [_modell("T1neu")])
+
+    assert [(z["Nr"], z["Verfahren"], z["y_A"]) for z in p["ablesung"]] == \
+        [(1, "Tangente", 3), (2, "Wendetangente", 2)]
+    methoden = [m["Methode"] for m in p["modelle"]]
+    assert methoden == ["ZPK", "W1", "W2", "T1neu"]
+    nummern = [m["Nr"] for m in p["modelle"]]
+    assert len(set(nummern)) == len(nummern)
+    assert p["modelle"][-1]["Ablesung_Nr"] == 1
+    assert p["modelle"][0].get("Ablesung_Nr") in (None, "")
+
+
+def test_ablesung_und_modelle_roundtrip():
+    p = pd.neu("Fall", programm="Test")
+    pd.ablesung_ersetzen(p, "Tangente", {"y_A": 10.0, "t_P1": 6.0}, [_modell("T1")])
+    q = pd.lesen(pd.schreiben(p, programm="Test", aktion="Tangente"))
+    assert q["ablesung"][0]["Verfahren"] == "Tangente"
+    assert q["ablesung"][0]["t_P1"] == 6.0
+    assert q["modelle"][0]["Ablesung_Nr"] == 1
+    assert pd.ablesung_finden(q, "3-Punkt") is None
+
+
+def test_alte_datei_ohne_ablesung_liest_sich():
+    p = pd.neu("Fall", programm="Test")
+    p["modelle"] = [{"Nr": 1, "Typ": "PTn", "Methode": "ZPK", "k_M": 2, "n": 3, "T_M": 1}]
+    q = pd.lesen(pd.schreiben(p))
+    assert q["ablesung"] is None
+    assert q["modelle"][0]["Ablesung_Nr"] == ""

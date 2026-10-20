@@ -262,3 +262,68 @@ def auswertung(
             modelle.append(eintrag)
 
     return {**kw, "methode": methode, "modelle": modelle}
+
+
+#: Name des Verfahrens in den Blättern Ablesung und Modelle der Projektdatei.
+#: Die Wendetangenten-App setzt hier "Wendetangente" ein.
+VERFAHREN = "Tangente"
+
+
+def projekt_zeilen(
+    zeit=None, x_mess=None, methode: int = 1,
+    xa=None, xe=None, ya=None, ye=None, t0=None,
+    x_tp1=None, t_tp1=None, x_tp2=None, t_tp2=None,
+    verfahren: str = VERFAHREN,
+) -> tuple[dict, list[dict]]:
+    """Ablesung und Modelle für die AGP-Projektdatei (2026-10-20).
+
+    Rückgabe ``(ablesung, modelle)`` im Format der Blätter ``Ablesung`` und
+    ``Modelle`` – Nummern vergibt :func:`projektdatei.ablesung_ersetzen`.
+    Je Ausgleichszeit der Methode (TG und/oder TG1) ein Modell
+    ``Typ = PT1TT`` mit ``T_T`` = Totzeit und ``T_1`` = Ausgleichszeit;
+    ``Guete`` ist Σ Δx²·Δt, ohne Messung leer.
+    Liegt die Tangente geometrisch falsch, gibt es keine Modelle – die
+    Ablesung wird trotzdem gespeichert.
+
+    Volle Genauigkeit, nicht gerundet.
+    """
+    erg = auswertung(zeit=zeit, x_mess=x_mess, methode=methode,
+                     xa=xa, xe=xe, ya=ya, ye=ye, t0=t0,
+                     x_tp1=x_tp1, t_tp1=t_tp1, x_tp2=x_tp2, t_tp2=t_tp2)
+
+    def wert(v):
+        z = _zahl(v)
+        return "" if z is None else z
+
+    ablesung = {"y_A": wert(xa), "y_E": wert(xe), "u_A": wert(ya), "u_E": wert(ye),
+                "t_0": wert(t0), "t_P1": wert(t_tp1), "y_P1": wert(x_tp1),
+                "t_P2": wert(t_tp2), "y_P2": wert(x_tp2),
+                "t_P3": "", "y_P3": "", "Kommentar": ""}
+
+    guete = {m["zeit_name"]: m["integral_ende"] for m in erg["modelle"]}
+    modelle: list[dict] = []
+    if erg["TT"] is not None and erg["k_s"] is not None:
+        for name in METHODE_ZEITEN[methode]:
+            ausgleichszeit = erg[name]
+            if ausgleichszeit is None or ausgleichszeit <= 0:
+                continue
+            # Spec 25v07, Blatt Modelle: PT1TT trägt T_T und T_1,
+            # n und T_M (PTn-Spalten) bleiben leer.
+            modelle.append({
+                "Typ": "PT1TT",
+                "Methode": f"{verfahren} M{1 if name == 'TG' else 2} ({name})",
+                "k_M": erg["k_s"], "n": "", "T_M": "",
+                "T_T": erg["TT"], "T_1": ausgleichszeit,
+                "Guete": wert(guete.get(name)),
+            })
+    return ablesung, modelle
+
+
+def ablesung_zu_eingaben(zeile: dict | None) -> dict:
+    """Zeile aus dem Blatt Ablesung → Eingaben der Oberfläche (Kernnamen)."""
+    zeile = zeile or {}
+    return {"xa": _zahl(zeile.get("y_A")), "xe": _zahl(zeile.get("y_E")),
+            "ya": _zahl(zeile.get("u_A")), "ye": _zahl(zeile.get("u_E")),
+            "t0": _zahl(zeile.get("t_0")),
+            "t_tp1": _zahl(zeile.get("t_P1")), "x_tp1": _zahl(zeile.get("y_P1")),
+            "t_tp2": _zahl(zeile.get("t_P2")), "x_tp2": _zahl(zeile.get("y_P2"))}

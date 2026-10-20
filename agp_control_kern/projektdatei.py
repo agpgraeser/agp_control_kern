@@ -106,7 +106,21 @@ _TEILSYSTEM_LABEL_ZU_KEY = {label: key for key, label in TEILSYSTEM_FELDER}
 
 STOERUNG_SPALTEN = ["Nr", "Typ", "Angriff", "Aktiv", "Amplitude", "Startzeit",
                     "Rate", "Frequenz", "Phase", "Seed", "Kommentar"]
-MODELL_SPALTEN = ["Nr", "Typ", "Methode", "k_M", "n", "T_M", "T_T", "T_1", "Guete"]
+# Ablesung_Nr (2026-10-20): Verweis auf die Zeile im Blatt Ablesung, aus der
+# das Modell entstanden ist; leer bei Modellen ohne Ablesung (z. B. PTn-ZPK).
+# Steht hinten, damit ältere Dateien passen.
+MODELL_SPALTEN = ["Nr", "Typ", "Methode", "k_M", "n", "T_M", "T_T", "T_1", "Guete",
+                  "Ablesung_Nr"]
+
+# Ablesung (2026-10-20): was ein Teilnehmer an der Messkurve abgelesen hat,
+# eine Zeile je Verfahren (Tangente, Wendetangente, 3-Punkt …). Damit lässt
+# sich die Auswertung nach dem Öffnen wiederherstellen und nachvollziehen.
+# Bezeichnungen wie im Blatt Zeitverlaeufe: y = Regelgröße, u = Stellgröße
+# (die PT1TT-Oberflächen nennen sie X und Y). Punkte P1 … P3: bei der
+# Tangente TP1/TP2, bei der Wendetangente Wendepunkt + zweiter Punkt, bei der
+# 3-Punkt-Methode die drei Punkte; nicht benötigte Spalten bleiben leer.
+ABLESUNG_SPALTEN = ["Nr", "Verfahren", "y_A", "y_E", "u_A", "u_E", "t_0",
+                    "t_P1", "y_P1", "t_P2", "y_P2", "t_P3", "y_P3", "Kommentar"]
 # Ebene (2026-10-09, Kaskade): 1 = innerster Regler … N = äußerer; leer =
 # Einzelkreis bzw. äußere Ebene. Steht hinten, damit ältere Dateien passen.
 REGLER_SPALTEN = ["Nr", "Modell_Nr", "Verfahren", "Reglertyp", "Optionen",
@@ -125,6 +139,7 @@ AUFSCHALTUNG_SPALTEN = ["Nr", "Aktiv", "Stoerung", "Punkt", "T_M", "T_tM", "Form
                         "K_SA", "T_V", "T_1", "Zaehler", "Nenner", "Kommentar"]
 
 _TABELLEN = [("Stoerungen", "stoerungen", STOERUNG_SPALTEN),
+             ("Ablesung", "ablesung", ABLESUNG_SPALTEN),
              ("Modelle", "modelle", MODELL_SPALTEN),
              ("Regler", "regler", REGLER_SPALTEN),
              ("Kennwerte", "kennwerte", KENNWERT_SPALTEN),
@@ -164,8 +179,60 @@ def neu(fallname: str, beschreibung: str = "", programm: str = "") -> dict:
                           "aktion": "Projekt angelegt"}],
         },
         "system": None, "stoerungen": None, "zeitverlaeufe": None,
-        "modelle": None, "regler": None, "kennwerte": None, "aufschaltungen": None,
+        "ablesung": None, "modelle": None, "regler": None, "kennwerte": None,
+        "aufschaltungen": None,
     }
+
+
+def _nummer(wert) -> int | None:
+    try:
+        return int(float(wert))
+    except (TypeError, ValueError):
+        return None
+
+
+def ablesung_ersetzen(projekt: dict, verfahren: str, ablesung: dict,
+                      modelle: list[dict]) -> dict:
+    """Ablesung und Modelle eines Verfahrens ins Projekt schreiben.
+
+    Je Verfahren gibt es **eine** Ablesung: eine vorhandene Zeile desselben
+    Verfahrens wird ersetzt, samt der Modelle, die auf sie verweisen.
+    Ablesungen und Modelle anderer Verfahren bleiben unberührt – so legen
+    Tangente, Wendetangente und 3-Punkt ihre Ergebnisse in dieselbe Datei.
+
+    ``ablesung`` ohne ``Nr``/``Verfahren``, ``modelle`` ohne ``Nr``/
+    ``Ablesung_Nr`` – beides vergibt diese Funktion. Ändert ``projekt``
+    und gibt es zurück.
+    """
+    alt = projekt.get("ablesung") or []
+    gleich = [z for z in alt if str(z.get("Verfahren", "")) == verfahren]
+    weg = {_nummer(z.get("Nr")) for z in gleich}
+    nummern = [_nummer(z.get("Nr")) for z in alt]
+    nr = (_nummer(gleich[0].get("Nr")) if gleich else None) \
+        or max([n for n in nummern if n is not None], default=0) + 1
+
+    projekt["ablesung"] = [z for z in alt
+                           if str(z.get("Verfahren", "")) != verfahren] + [
+        {**ablesung, "Nr": nr, "Verfahren": verfahren}]
+    projekt["ablesung"].sort(key=lambda z: _nummer(z.get("Nr")) or 0)
+
+    def bleibt(m: dict) -> bool:
+        bezug = _nummer(m.get("Ablesung_Nr"))
+        return bezug is None or bezug not in weg
+
+    behalten = [m for m in (projekt.get("modelle") or []) if bleibt(m)]
+    naechste = max([_nummer(m.get("Nr")) or 0 for m in behalten], default=0) + 1
+    projekt["modelle"] = behalten + [
+        {**m, "Nr": naechste + i, "Ablesung_Nr": nr} for i, m in enumerate(modelle)]
+    return projekt
+
+
+def ablesung_finden(projekt: dict, verfahren: str) -> dict | None:
+    """Die Ablesung eines Verfahrens, oder None."""
+    for zeile in projekt.get("ablesung") or []:
+        if str(zeile.get("Verfahren", "")) == verfahren:
+            return zeile
+    return None
 
 
 # ─── Schreiben ───────────────────────────────────────────────────────────────
@@ -351,8 +418,9 @@ def lesen(inhalt: bytes) -> dict:
             "Datei konnte nicht als Excel-Datei (.xlsx) gelesen werden.")
 
     projekt = {"meta": None, "system": None, "stoerungen": None,
-               "zeitverlaeufe": None, "modelle": None, "regler": None,
-               "kennwerte": None, "teilsysteme": None, "aufschaltungen": None}
+               "zeitverlaeufe": None, "ablesung": None, "modelle": None,
+               "regler": None, "kennwerte": None, "teilsysteme": None,
+               "aufschaltungen": None}
 
     if "Meta" in wb.sheetnames:
         projekt["meta"] = _lese_meta(wb["Meta"])
