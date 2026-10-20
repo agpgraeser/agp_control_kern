@@ -230,13 +230,24 @@ def test_ungueltige_eingaben_werden_begruendet(aenderung, text):
 def test_tangentenpunkte_duerfen_die_beharrungswerte_beruehren():
     """Neue Grenze (20.10.2026): ``>= XA`` und ``<= XE`` statt echt dazwischen.
 
-    Kennwerte liefert ``XTP1 == XA`` trotzdem nicht -- dann faellt t1 mit
-    tTP1 zusammen und die geometrische Pruefung ``t1 < tTP1 < t2`` greift.
+    Seit der Korrektur am selben Tag liefert ``XTP1 == XA`` auch Kennwerte:
+    t1 faellt dann genau auf tTP1, die Pruefung lautet ``t1 <= tTP1 < t2``.
     """
     gueltig, grund = pt1tt_eingaben_gueltig(
         REF["xa"], REF["xe"], REF["t0"], REF["xa"], REF["t_tp1"],
         REF["xe"], REF["t_tp2"])
     assert gueltig and grund == ""
+
+
+def test_tangentenpunkte_auf_den_beharrungswerten_liefern_kennwerte():
+    """Axels Fall (20.10.2026): XTP1 = XA, XTP2 = XE -> t1 = tTP1, t2 = tTP2.
+    Vorher meldete die App „Tangente liegt geometrisch falsch“."""
+    kw = pt1tt_kennwerte(xa=18, xe=27, ya=0, ye=1, t0=10,
+                         x_tp1=18, t_tp1=22, x_tp2=27, t_tp2=99)
+    assert kw["t1"] == pytest.approx(22.0)
+    assert kw["t2"] == pytest.approx(99.0)
+    assert kw["TT"] == pytest.approx(12.0)
+    assert kw["TG"] == pytest.approx(77.0)
 
 
 def test_tangentenpunkt_vor_dem_sprung_ist_ungueltig():
@@ -366,10 +377,10 @@ def test_projekt_zeilen_methode_3_zwei_modelle_ohne_messung():
 
 
 def test_projekt_zeilen_tangente_schief_keine_modelle():
-    falsch = {**REF, "x_tp1": 10.0}          # t1 == tTP1 -> keine Kennwerte
+    falsch = {**REF, "x_tp1": 9.5}           # XTP1 < XA -> t1 > tTP1
     ablesung, modelle = pt1tt_projekt_zeilen(**falsch)
     assert modelle == []
-    assert ablesung["y_P1"] == 10.0
+    assert ablesung["y_P1"] == 9.5
 
 
 def test_ablesung_rundweg_ueber_die_datei():

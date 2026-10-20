@@ -34,7 +34,7 @@ Rechenweg
 
 Zwei Pruefungen der alten App bleiben erhalten:
 
-* Kennwerte entstehen nur bei ``t1 < tTP1 < t2`` -- sonst liegt die Tangente
+* Kennwerte entstehen nur bei ``t1 <= tTP1 < t2`` -- sonst liegt die Tangente
   geometrisch falsch und es wird nichts ausgegeben.
 * ``t0`` muss gesetzt und ``>= 0`` sein; **t1 und t2 werden dagegen
   unabhaengig von t0 gerechnet.**
@@ -154,8 +154,10 @@ def kennwerte(
         if steigung != 0:
             t1_roh = w_t1p + (w_xa - w_x1) / steigung
             t2_roh = w_t1p + (w_xe - w_x1) / steigung
-            # Geometrische Pruefung: t1 vor TP1, t2 nach TP1
-            if t1_roh < w_t1p < t2_roh:
+            # Geometrische Pruefung: t1 vor oder auf TP1, t2 nach TP1.
+            # t1 == tTP1 ist erlaubt (seit 20.10.2026): XTP1 == XA ist eine
+            # gueltige Eingabe, und dann liegt t1 genau auf TP1.
+            if t1_roh <= w_t1p < t2_roh:
                 t1, t2 = t1_roh, t2_roh
 
     tt = tg = tg1 = None
