@@ -45,4 +45,17 @@ from .ptn_vergleich import (  # noqa: F401
     signalwerte_aus_projekt,
 )
 
+from . import pt1tt_tangente  # noqa: F401
+# Mit Vorsilbe re-exportiert wie bei ptn_zpk: "kennwerte" und "auswertung"
+# allein waeren im Paketnamensraum nicht eindeutig.
+from .pt1tt_tangente import (  # noqa: F401
+    METHODEN as PT1TT_METHODEN,
+    METHODE_ZEITEN as PT1TT_METHODE_ZEITEN,
+    eingaben_gueltig as pt1tt_eingaben_gueltig,
+    kennwerte as pt1tt_kennwerte,
+    modell_sprungantwort as pt1tt_modell_sprungantwort,
+    guetemasse as pt1tt_guetemasse,
+    auswertung as pt1tt_auswertung,
+)
+
 __version__ = "0.1.0"
