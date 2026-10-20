@@ -33,6 +33,10 @@ Vereinheitlichung, Spec 25v07 + Antwortkonzept + Projektdatei-Spec V1 in
   portiert aus `PT1TT_Berechnung/src/utils/pt1ttMath.ts` (2026-10-20).
   Modellkurve und Fehlerintegral aus `pt1tt_tangente`. Referenzfall vom
   Original-TypeScript gerechnet (Node + esbuild), 11 Tests. Verfahren "3-Punkt".
+- `pt1tt_vergleich.py` – bis zu vier PT1TT-Modelle an einem Signal vergleichen,
+  portiert aus `PT1TT_Vergleich/src/utils/math.ts` (2026-10-20); dazu
+  `systeme_aus_projekt()` / `signal_aus_projekt()` für die Übernahme aus der
+  Projektdatei. Sollwerte vom Original-TypeScript, 9 Tests.
 - `__init__.py` re-exportiert alles Wichtige – die PT1TT-Namen **mit Vorsilbe**
   (`pt1tt_kennwerte`, `pt1tt_auswertung`, …), weil `kennwerte`/`auswertung`
   im Paketnamensraum nicht eindeutig wären.
@@ -46,13 +50,13 @@ Editierbar eingebunden (`-e ../agp_control_kern` in requirements.txt):
 Die Vite/JS-Apps (PTkPTn-*) nutzen NUR das Dateiformat (kein Python).
 
 ## Tests & Regeln
-- `venv der Apps: python -m pytest tests` (158 Tests hier; die tiefe Abdeckung
+- `venv der Apps: python -m pytest tests` (167 Tests hier; die tiefe Abdeckung
   der Kernfunktionen liegt historisch in RegelkreisZustandsDemo/test_sim_core.py).
 - **Änderungen am Kern immer gegen alle App-Suiten prüfen** – die Apps binden
   dieses Paket live ein (-e). Stand 2026-10-20: RegelkreisSimulationen 113,
   ZPK-Identifikation 26, ReglerparameterBerechnung 23, PTn-ZPK 30,
   PTn-Vergleich 20, SystemDarstellungen 15, PT1TT-Tangente 25,
-  PT1TT-Wendetangente 30, PT1TT-3Punkt 13.
+  PT1TT-Wendetangente 30, PT1TT-3Punkt 13, PT1TT-Vergleich 7.
 - Formatversion der Projektdatei nur nach Spec-Änderung (Versionstabelle) erhöhen.
 
 ## Verlauf
