@@ -38,6 +38,9 @@ Zwei Pruefungen der alten App bleiben erhalten:
   geometrisch falsch und es wird nichts ausgegeben.
 * ``t0`` muss gesetzt und ``>= 0`` sein; **t1 und t2 werden dagegen
   unabhaengig von t0 gerechnet.**
+
+Die Grenzen der Eingabepruefung sind am 20.10.2026 geaendert worden,
+siehe :func:`eingaben_gueltig`.
 """
 
 from __future__ import annotations
@@ -79,8 +82,20 @@ def eingaben_gueltig(
 ) -> tuple[bool, str]:
     """Pruefung der Eingabefelder, wie die Oberflaeche sie macht.
 
-    Bedingungen aus der ``CLAUDE.md`` der alten App:
-    ``XA < XTP1 < XE``, ``XTP1 < XTP2 < XE``, ``tTP2 > tTP1``, ``t0 >= 0``.
+    Grenzen seit dem 20.10.2026 (Ansage Axel Graeser)::
+
+        t0    >= 0
+        XTP1  >= XA        XTP2 <= XE        XTP1 < XTP2
+        tTP1  >  t0        tTP2 >  tTP1
+
+    Die alte App verlangte ``XA < XTP1 < XE`` und ``XTP1 < XTP2 < XE``,
+    liess dafuer aber zu, dass ein Tangentenpunkt **vor** dem Sprung liegt.
+    Die neuen Grenzen lassen die Punkte bis an die Beharrungswerte heran und
+    binden sie dafuer an den Sprungzeitpunkt. ``XTP1 < XTP2`` bleibt: ohne
+    das waere die Steigung der Tangente null oder negativ.
+
+    Die Reihenfolge ``XTP1 < XTP2`` ist hier die **einzige** Bedingung, die
+    nicht aus der Ansage stammt.
 
     Gibt (gueltig, Begruendung) zurueck. Die Begruendung ist leer, wenn
     alles passt, und nennt sonst **die erste** verletzte Bedingung -- so
@@ -97,10 +112,14 @@ def eingaben_gueltig(
 
     if werte["t0"] < 0:
         return False, "t0 muss >= 0 sein"
-    if not werte["XA"] < werte["XTP1"] < werte["XE"]:
-        return False, "XA < XTP1 < XE verletzt"
-    if not werte["XTP1"] < werte["XTP2"] < werte["XE"]:
-        return False, "XTP1 < XTP2 < XE verletzt"
+    if not werte["XTP1"] >= werte["XA"]:
+        return False, "XTP1 >= XA verletzt"
+    if not werte["XTP2"] <= werte["XE"]:
+        return False, "XTP2 <= XE verletzt"
+    if not werte["XTP1"] < werte["XTP2"]:
+        return False, "XTP1 < XTP2 verletzt"
+    if not werte["tTP1"] > werte["t0"]:
+        return False, "tTP1 > t0 verletzt"
     if not werte["tTP2"] > werte["tTP1"]:
         return False, "tTP2 > tTP1 verletzt"
     return True, ""

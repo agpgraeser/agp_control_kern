@@ -210,11 +210,11 @@ def test_referenzfall_ist_gueltige_eingabe():
 
 
 @pytest.mark.parametrize("aenderung, text", [
-    ({"t0": -0.1}, "t0"),
-    ({"x_tp1": 9.0}, "XA < XTP1 < XE"),      # TP1 unter XA
-    ({"x_tp1": 21.0}, "XA < XTP1 < XE"),     # TP1 ueber XE
-    ({"x_tp2": 11.0}, "XTP1 < XTP2 < XE"),   # TP2 vor TP1
-    ({"x_tp2": 25.0}, "XTP1 < XTP2 < XE"),   # TP2 ueber XE
+    ({"t0": -0.1}, "t0 muss >= 0"),
+    ({"x_tp1": 9.0}, "XTP1 >= XA"),          # TP1 unter XA
+    ({"x_tp2": 25.0}, "XTP2 <= XE"),         # TP2 ueber XE
+    ({"x_tp2": 11.0}, "XTP1 < XTP2"),        # TP2 unter TP1
+    ({"t_tp1": 1.0}, "tTP1 > t0"),           # TP1 vor dem Sprung
     ({"t_tp2": 3.0}, "tTP2 > tTP1"),
     ({"x_tp1": None}, "nicht angegeben"),
 ])
@@ -225,6 +225,28 @@ def test_ungueltige_eingaben_werden_begruendet(aenderung, text):
         werte["t_tp1"], werte["x_tp2"], werte["t_tp2"])
     assert not gueltig
     assert text in grund
+
+
+def test_tangentenpunkte_duerfen_die_beharrungswerte_beruehren():
+    """Neue Grenze (20.10.2026): ``>= XA`` und ``<= XE`` statt echt dazwischen.
+
+    Kennwerte liefert ``XTP1 == XA`` trotzdem nicht -- dann faellt t1 mit
+    tTP1 zusammen und die geometrische Pruefung ``t1 < tTP1 < t2`` greift.
+    """
+    gueltig, grund = pt1tt_eingaben_gueltig(
+        REF["xa"], REF["xe"], REF["t0"], REF["xa"], REF["t_tp1"],
+        REF["xe"], REF["t_tp2"])
+    assert gueltig and grund == ""
+
+
+def test_tangentenpunkt_vor_dem_sprung_ist_ungueltig():
+    """tTP1 > t0: ein Tangentenpunkt vor dem Stellsprung ergibt keinen Sinn.
+    Die alte App liess ihn zu."""
+    gueltig, grund = pt1tt_eingaben_gueltig(
+        REF["xa"], REF["xe"], 7.0, REF["x_tp1"], 6.0,
+        REF["x_tp2"], REF["t_tp2"])
+    assert not gueltig
+    assert "tTP1 > t0" in grund
 
 
 # ── Modellkurve und Guetemasse einzeln ────────────────────────────────────
