@@ -392,3 +392,11 @@ def test_ablesung_rundweg_ueber_die_datei():
     eingaben = pt1tt_ablesung_zu_eingaben(zeile)
     assert eingaben == {k: pytest.approx(v) for k, v in REF.items()}
     assert q["modelle"][0]["Ablesung_Nr"] == zeile["Nr"]
+
+
+def test_begruendung_nennt_die_punkte_der_wendetangente():
+    """Die Wendetangente heisst ihre Punkte WP1/WP2 (2026-10-20)."""
+    gueltig, grund = pt1tt_eingaben_gueltig(10, 20, 2, 9, 6, 15, 12, punkt="WP")
+    assert not gueltig and grund == "XWP1 >= XA verletzt"
+    _, grund = pt1tt_eingaben_gueltig(10, 20, 2, None, 6, 15, 12, punkt="WP")
+    assert "XWP1" in grund

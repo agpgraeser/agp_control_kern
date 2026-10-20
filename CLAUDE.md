@@ -24,6 +24,8 @@ Vereinheitlichung, Spec 25v07 + Antwortkonzept + Projektdatei-Spec V1 in
   Einspeichersystem ohne Wendepunkt) und später PT1TT · Wendetangente
   (TP1 = Wendepunkt). Punkte heißen deshalb neutral `tangentenpunkt1/2`.
   Alle drei Methoden im Kern; die Tangenten-Oberfläche zeigt nur Methode 1.
+  `eingaben_gueltig(..., punkt="WP")` nennt die Punkte in der Begründung XWP1 …
+  (Wendetangente), Voreinstellung "TP".
   `projekt_zeilen()` / `ablesung_zu_eingaben()`: Ablesung und Modelle für die
   Projektdatei (PT1TT nach Spec: `T_T`, `T_1`; `n`, `T_M` leer). Die
   Wendetangente ruft dieselbe Funktion mit `verfahren="Wendetangente"`.
@@ -40,7 +42,7 @@ Editierbar eingebunden (`-e ../agp_control_kern` in requirements.txt):
 Die Vite/JS-Apps (PTkPTn-*) nutzen NUR das Dateiformat (kein Python).
 
 ## Tests & Regeln
-- `venv der Apps: python -m pytest tests` (145 Tests hier; die tiefe Abdeckung
+- `venv der Apps: python -m pytest tests` (147 Tests hier; die tiefe Abdeckung
   der Kernfunktionen liegt historisch in RegelkreisZustandsDemo/test_sim_core.py).
 - **Änderungen am Kern immer gegen alle App-Suiten prüfen** – die Apps binden
   dieses Paket live ein (-e). Stand 2026-10-20: RegelkreisSimulationen 113,

@@ -78,7 +78,7 @@ def _zahl(wert) -> float | None:
 
 
 def eingaben_gueltig(
-    xa, xe, t0, x_tp1, t_tp1, x_tp2, t_tp2
+    xa, xe, t0, x_tp1, t_tp1, x_tp2, t_tp2, punkt: str = "TP",
 ) -> tuple[bool, str]:
     """Pruefung der Eingabefelder, wie die Oberflaeche sie macht.
 
@@ -100,11 +100,15 @@ def eingaben_gueltig(
     Gibt (gueltig, Begruendung) zurueck. Die Begruendung ist leer, wenn
     alles passt, und nennt sonst **die erste** verletzte Bedingung -- so
     kann die Oberflaeche sie unverkuerzt anzeigen.
+
+    ``punkt`` ist der Name der Punkte in der Begruendung: "TP" fuer die
+    Tangente (XTP1 …), "WP" fuer die Wendetangente (XWP1 …).
     """
+    x1, t1, x2, t2 = f"X{punkt}1", f"t{punkt}1", f"X{punkt}2", f"t{punkt}2"
     werte = {
         "XA": _zahl(xa), "XE": _zahl(xe), "t0": _zahl(t0),
-        "XTP1": _zahl(x_tp1), "tTP1": _zahl(t_tp1),
-        "XTP2": _zahl(x_tp2), "tTP2": _zahl(t_tp2),
+        x1: _zahl(x_tp1), t1: _zahl(t_tp1),
+        x2: _zahl(x_tp2), t2: _zahl(t_tp2),
     }
     fehlend = [name for name, wert in werte.items() if wert is None]
     if fehlend:
@@ -112,16 +116,16 @@ def eingaben_gueltig(
 
     if werte["t0"] < 0:
         return False, "t0 muss >= 0 sein"
-    if not werte["XTP1"] >= werte["XA"]:
-        return False, "XTP1 >= XA verletzt"
-    if not werte["XTP2"] <= werte["XE"]:
-        return False, "XTP2 <= XE verletzt"
-    if not werte["XTP1"] < werte["XTP2"]:
-        return False, "XTP1 < XTP2 verletzt"
-    if not werte["tTP1"] > werte["t0"]:
-        return False, "tTP1 > t0 verletzt"
-    if not werte["tTP2"] > werte["tTP1"]:
-        return False, "tTP2 > tTP1 verletzt"
+    if not werte[x1] >= werte["XA"]:
+        return False, f"{x1} >= XA verletzt"
+    if not werte[x2] <= werte["XE"]:
+        return False, f"{x2} <= XE verletzt"
+    if not werte[x1] < werte[x2]:
+        return False, f"{x1} < {x2} verletzt"
+    if not werte[t1] > werte["t0"]:
+        return False, f"{t1} > t0 verletzt"
+    if not werte[t2] > werte[t1]:
+        return False, f"{t2} > {t1} verletzt"
     return True, ""
 
 
