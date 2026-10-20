@@ -60,4 +60,8 @@ from .pt1tt_tangente import (  # noqa: F401
     ablesung_zu_eingaben as pt1tt_ablesung_zu_eingaben,
 )
 
+
+
+from . import pt1tt_3punkt  # noqa: F401
+
 __version__ = "0.1.0"
