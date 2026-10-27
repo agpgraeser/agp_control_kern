@@ -37,6 +37,10 @@ Vereinheitlichung, Spec 25v07 + Antwortkonzept + Projektdatei-Spec V1 in
   portiert aus `PT1TT_Vergleich/src/utils/math.ts` (2026-10-20); dazu
   `systeme_aus_projekt()` / `signal_aus_projekt()` für die Übernahme aus der
   Projektdatei. Sollwerte vom Original-TypeScript, 9 Tests.
+- `autoerfassung.py` – liest YA/YE/UA/UE, t0, die Höhen bei 10/50/90 % und
+  t10/t50/t90 aus einer gemessenen Sprungantwort (Automatisierungsgrad c).
+  Seit 2026-10-27 hier (vorher app-lokal in PTn-ZPK); genutzt von PTn-ZPK und
+  PT1TT-3Punkt. Schlüssel in ZPK-Benennung (y = Messgröße, u = Stellgröße).
 - `__init__.py` re-exportiert alles Wichtige – die PT1TT-Namen **mit Vorsilbe**
   (`pt1tt_kennwerte`, `pt1tt_auswertung`, …), weil `kennwerte`/`auswertung`
   im Paketnamensraum nicht eindeutig wären.
