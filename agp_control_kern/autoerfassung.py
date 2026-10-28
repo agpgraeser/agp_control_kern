@@ -165,19 +165,8 @@ def erfassen(zeit: list[float], y_daten: list[float],
     steigend = dy > 0
 
     # ── Ablesehoehen und Schwellenzeiten ─────────────────────────────────────
-    # Erst ab dem Sprung suchen, sonst faengt Rauschen vor t0 die Schwelle ab.
-    ab_index = next((i for i, t in enumerate(zeit) if t >= t_grenze), 0)
-
-    hoehen, zeiten = {}, {}
-    for anteil, name in ((0.10, "10"), (0.50, "50"), (0.90, "90")):
-        y_schwelle = ya + anteil * dy
-        hoehen[name] = float(y_schwelle)
-        zeiten[name] = _schnittzeit(zeit, y_daten, y_schwelle, steigend, ab_index)
-
-    fehlend = [f"t{n}" for n, v in zeiten.items() if v is None]
-    if fehlend:
-        hinweise.append("Nicht abgelesen werden konnte: " + ", ".join(fehlend)
-                        + " – die Messung endet vermutlich vor dem Beharrungszustand.")
+    a = ablesen(zeit, y_daten, ya, ye, t_grenze)
+    hinweise.extend(a["hinweise"])
 
     return {
         "ya": ya,
@@ -186,8 +175,43 @@ def erfassen(zeit: list[float], y_daten: list[float],
         "ue": ue,
         "t0": t0,                          # None = offen, siehe hinweise
         "t0_geschaetzt": t0_geschaetzt,    # Anhaltspunkt, bewusst nicht gesetzt
-        "y10": hoehen["10"], "y50": hoehen["50"], "y90": hoehen["90"],
-        "t10": zeiten["10"], "t50": zeiten["50"], "t90": zeiten["90"],
+        "y10": a["y10"], "y50": a["y50"], "y90": a["y90"],
+        "t10": a["t10"], "t50": a["t50"], "t90": a["t90"],
         "hat_u": hat_u,
         "hinweise": hinweise,
     }
+
+
+def ablesen(zeit: list[float], y_daten: list[float], ya: float, ye: float,
+            t_ab: float | None = None) -> dict:
+    """Hoehen bei 10/50/90 % zwischen ``ya`` und ``ye`` und die Zeiten, zu denen
+    die Messung sie zuerst erreicht.
+
+    Teil von :func:`erfassen`, aber auch einzeln nutzbar: korrigiert der
+    Nutzer in Grad c Ruhe- oder Endwert bzw. t0, liest die App damit neu ab,
+    statt die ganze Erfassung zu wiederholen. Gesucht wird erst ab ``t_ab``
+    (dem Sprung), sonst faengt Rauschen davor die Schwelle ab.
+    """
+    if not zeit or len(zeit) != len(y_daten):
+        raise ErfassungError("Messdaten fehlen oder Zeit und Messgröße sind "
+                             "unterschiedlich lang.")
+    dy = ye - ya
+    if dy == 0:
+        raise ErfassungError("Ruhe- und Endwert sind gleich – kein auswertbarer Hub.")
+    steigend = dy > 0
+    ab_index = 0 if t_ab is None else next(
+        (i for i, t in enumerate(zeit) if t >= t_ab), len(zeit))
+
+    erg: dict = {"hinweise": []}
+    for anteil, name in ((0.10, "10"), (0.50, "50"), (0.90, "90")):
+        schwelle = ya + anteil * dy
+        erg["y" + name] = float(schwelle)
+        erg["t" + name] = _schnittzeit(zeit, y_daten, schwelle, steigend, ab_index)
+
+    fehlend = [k for k in ("t10", "t50", "t90") if erg[k] is None]
+    if fehlend:
+        erg["hinweise"].append(
+            "Nicht abgelesen werden konnte: " + ", ".join(fehlend)
+            + " – die Messung endet vermutlich vor dem Beharrungszustand"
+              " oder Ruhe-/Endwert liegen außerhalb der Messung.")
+    return erg

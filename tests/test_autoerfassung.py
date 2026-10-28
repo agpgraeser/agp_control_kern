@@ -50,3 +50,19 @@ def test_ohne_stellgroesse_bleibt_t0_offen():
 def test_konstante_messung_wird_gemeldet():
     with pytest.raises(autoerfassung.ErfassungError):
         autoerfassung.erfassen([float(i) for i in range(20)], [1.0] * 20)
+
+
+def test_ablesen_mit_korrigiertem_endwert():
+    """Nach Korrektur von XE liest ablesen() bei den neuen Hoehen neu ab."""
+    zeit, y, u = _pt1tt_messung()
+    e = autoerfassung.erfassen(zeit, y, u)
+    a = autoerfassung.ablesen(zeit, y, e["ya"], e["ye"] - 1.0, e["t0"])
+    assert a["y50"] == pytest.approx((e["ya"] + e["ye"] - 1.0) / 2)
+    assert a["t50"] < e["t50"]          # niedrigere Schwelle → frueher erreicht
+    assert a["hinweise"] == []
+
+
+def test_ablesen_meldet_unerreichbare_schwelle():
+    zeit, y, u = _pt1tt_messung()
+    a = autoerfassung.ablesen(zeit, y, 10.0, 30.0, 2.0)   # Endwert zu hoch
+    assert a["t90"] is None and any("t90" in h for h in a["hinweise"])
